@@ -26,9 +26,14 @@ defmodule LiveFlow.Components.Edge do
       <.edge edge={edge} source_node={source} target_node={target} />
   """
   attr :edge, Edge, required: true
-  attr :source_node, Node, required: true
-  attr :target_node, Node, required: true
+  attr :source_node, :any, required: true
+  attr :target_node, :any, required: true
   attr :class, :string, default: nil
+
+  # An edge whose source/target node is missing (e.g. removed between
+  # renders) renders nothing instead of crashing the whole flow.
+  def edge(%{source_node: nil} = assigns), do: ~H""
+  def edge(%{target_node: nil} = assigns), do: ~H""
 
   def edge(assigns) do
     edge = assigns.edge

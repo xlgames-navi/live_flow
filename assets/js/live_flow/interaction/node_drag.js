@@ -119,6 +119,8 @@ export class NodeDragManager {
         targetNodeId: targetId,
         sourceHandlePos,
         targetHandlePos,
+        sourceHandleId: g.dataset.sourceHandle || null,
+        targetHandleId: g.dataset.targetHandle || null,
         // Cache source/target handle references for label update
         labelWrapper: g.querySelector('.lf-edge-label-wrapper'),
         insertWrapper: g.querySelector('.lf-edge-insert-wrapper'),
@@ -148,8 +150,10 @@ export class NodeDragManager {
 
   /**
    * Calculate handle coordinates based on node position and dimensions.
+   * If handleId is given, reads offsetLeft/offsetTop from the actual handle DOM
+   * element so custom-positioned handles (style="left:75%") are respected.
    */
-  getHandleCoords(nodeId, handlePosition) {
+  getHandleCoords(nodeId, handlePosition, handleId) {
     const nodeEl = this.hook.nodeLayer.querySelector(`[data-node-id="${nodeId}"]`);
     if (!nodeEl) return null;
 
@@ -159,6 +163,20 @@ export class NodeDragManager {
     const y = clientPos ? clientPos.y : (parseFloat(nodeEl.style.top) || 0);
     const w = nodeEl.offsetWidth || 100;
     const h = nodeEl.offsetHeight || 40;
+
+    // For custom-positioned handles, offsetLeft/offsetTop gives the handle's
+    // center position along the face (CSS transforms center the dot on that point).
+    if (handleId) {
+      const handleEl = nodeEl.querySelector(`[data-handle-id="${handleId}"]`);
+      if (handleEl) {
+        switch (handlePosition) {
+          case 'top':    return { x: x + handleEl.offsetLeft, y: y };
+          case 'bottom': return { x: x + handleEl.offsetLeft, y: y + h };
+          case 'left':   return { x: x, y: y + handleEl.offsetTop };
+          case 'right':  return { x: x + w, y: y + handleEl.offsetTop };
+        }
+      }
+    }
 
     switch (handlePosition) {
       case 'top':    return { x: x + w / 2, y: y };
@@ -174,8 +192,8 @@ export class NodeDragManager {
    */
   updateEdgePaths() {
     for (const edge of this.affectedEdges) {
-      const sourceCoords = this.getHandleCoords(edge.sourceNodeId, edge.sourceHandlePos);
-      const targetCoords = this.getHandleCoords(edge.targetNodeId, edge.targetHandlePos);
+      const sourceCoords = this.getHandleCoords(edge.sourceNodeId, edge.sourceHandlePos, edge.sourceHandleId);
+      const targetCoords = this.getHandleCoords(edge.targetNodeId, edge.targetHandlePos, edge.targetHandleId);
       if (!sourceCoords || !targetCoords) continue;
 
       const pathD = calculateBezierPath(

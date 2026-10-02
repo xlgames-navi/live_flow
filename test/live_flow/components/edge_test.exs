@@ -236,4 +236,23 @@ defmodule LiveFlow.Components.EdgeTest do
       assert_in_delta sy, 20.0, 0.01
     end
   end
+
+  describe "missing nodes" do
+    test "renders nothing when the source or target node is nil" do
+      edge = Edge.new("e1", "a", "b")
+      node = Node.new("b", %{x: 0, y: 0}, %{}, width: 100, height: 40)
+
+      assert render_component(&Components.Edge.edge/1,
+               edge: edge,
+               source_node: nil,
+               target_node: node
+             ) == ""
+
+      assert render_component(&Components.Edge.edge/1,
+               edge: edge,
+               source_node: node,
+               target_node: nil
+             ) == ""
+    end
+  end
 end
