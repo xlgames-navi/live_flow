@@ -219,6 +219,7 @@ export const LiveFlowHook = {
     // Measure initial nodes after first render
     requestAnimationFrame(() => {
       this.measureNodes();
+      this.pushViewportChange();
       // Fit view on init if configured
       if (this.config.fitViewOnInit) {
         requestAnimationFrame(() => this.panZoom.fitView());
@@ -237,6 +238,16 @@ export const LiveFlowHook = {
     this.nodeObserver?.disconnect();
     this.nodeResizeObserver?.disconnect();
     this.removeEventListeners();
+  },
+
+  // After a LiveView reconnect the server process is new and has lost the
+  // measured node dimensions and viewport, while this hook instance (and its
+  // measurement cache) survives. Re-send everything.
+  reconnected() {
+    this._measuredNodes = new Map();
+    this.measureContainer();
+    this.measureNodes();
+    this.pushViewportChange();
   },
 
   updated() {
@@ -300,6 +311,8 @@ export const LiveFlowHook = {
   setupResizeObserver() {
     this.resizeObserver = new ResizeObserver(() => {
       this.measureContainer();
+      // Keep the server-side minimap viewport rectangle in sync with the canvas size
+      this.pushViewportChange();
     });
     this.resizeObserver.observe(this.container);
   },
@@ -1051,6 +1064,10 @@ export const LiveFlowHook = {
   },
 
   pushViewportChange() {
-    this.pushEvent('lf:viewport_change', this.viewport);
+    this.pushEvent('lf:viewport_change', {
+      ...this.viewport,
+      container_width: this.containerRect?.width,
+      container_height: this.containerRect?.height
+    });
   },
 };

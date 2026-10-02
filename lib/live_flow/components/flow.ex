@@ -465,27 +465,33 @@ defmodule LiveFlow.Components.Flow do
     # Calculate minimap scale
     bounds = State.bounds(assigns.flow)
 
-    {scale, nodes_style} =
+    # Minimap box is 200x150 (live_flow.css) with 10px padding; content is
+    # scaled to fit and centered.
+    {scale, offset_x, offset_y} =
       if bounds do
         scale = min(180 / max(bounds.width, 1), 130 / max(bounds.height, 1))
-        offset_x = -bounds.x * scale + 10
-        offset_y = -bounds.y * scale + 10
-        {scale, "transform: translate(#{offset_x}px, #{offset_y}px) scale(#{scale})"}
+        offset_x = (200 - bounds.width * scale) / 2 - bounds.x * scale
+        offset_y = (150 - bounds.height * scale) / 2 - bounds.y * scale
+        {scale, offset_x, offset_y}
       else
-        {1, ""}
+        {1, 0, 0}
       end
+
+    nodes_style =
+      if bounds,
+        do: "transform: translate(#{offset_x}px, #{offset_y}px) scale(#{scale})",
+        else: ""
 
     vp = assigns.flow.viewport
 
     viewport_style =
       if bounds do
-        # Viewport rectangle in minimap coordinates
-        vp_x = -vp.x / vp.zoom * scale + 10 - bounds.x * scale
-        vp_y = -vp.y / vp.zoom * scale + 10 - bounds.y * scale
-        # Assuming 800px container
-        vp_w = 800 / vp.zoom * scale
-        # Assuming 600px container
-        vp_h = 600 / vp.zoom * scale
+        # Viewport rectangle in minimap coordinates, sized from the real
+        # container dimensions reported by the client.
+        vp_x = -vp.x / vp.zoom * scale + offset_x
+        vp_y = -vp.y / vp.zoom * scale + offset_y
+        vp_w = vp.container_width / vp.zoom * scale
+        vp_h = vp.container_height / vp.zoom * scale
         "left: #{vp_x}px; top: #{vp_y}px; width: #{vp_w}px; height: #{vp_h}px"
       else
         ""

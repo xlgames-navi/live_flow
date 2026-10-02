@@ -34,10 +34,14 @@ defmodule LiveFlow.Viewport do
   @type t :: %__MODULE__{
           x: float(),
           y: float(),
-          zoom: float()
+          zoom: float(),
+          container_width: float(),
+          container_height: float()
         }
 
-  defstruct x: 0.0, y: 0.0, zoom: 1.0
+  # container_width/height: rendered canvas size in screen px, reported by the
+  # client hook. Used by the minimap to size its viewport rectangle.
+  defstruct x: 0.0, y: 0.0, zoom: 1.0, container_width: 800.0, container_height: 600.0
 
   @default_min_zoom 0.1
   @default_max_zoom 4.0
@@ -72,8 +76,8 @@ defmodule LiveFlow.Viewport do
   Sets the viewport position and zoom.
   """
   @spec set(t(), number(), number(), number()) :: t()
-  def set(%__MODULE__{}, x, y, zoom) do
-    %__MODULE__{x: x * 1.0, y: y * 1.0, zoom: zoom * 1.0}
+  def set(%__MODULE__{} = vp, x, y, zoom) do
+    %{vp | x: x * 1.0, y: y * 1.0, zoom: zoom * 1.0}
   end
 
   @doc """
@@ -237,7 +241,13 @@ defmodule LiveFlow.Viewport do
     x = container.width / 2 - center_x * zoom
     y = container.height / 2 - center_y * zoom
 
-    %__MODULE__{x: x, y: y, zoom: zoom}
+    %__MODULE__{
+      x: x,
+      y: y,
+      zoom: zoom,
+      container_width: container.width * 1.0,
+      container_height: container.height * 1.0
+    }
   end
 
   defp clamp(value, min, max) do

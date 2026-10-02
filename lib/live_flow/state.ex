@@ -427,10 +427,17 @@ defmodule LiveFlow.State do
   """
   @spec update_viewport(t(), map()) :: t()
   def update_viewport(%__MODULE__{viewport: vp} = state, %{} = attrs) do
+    # nil (e.g. container not measured yet on the client) keeps the current value
+    get = fn key, default ->
+      Map.get(attrs, key, Map.get(attrs, Atom.to_string(key))) || default
+    end
+
     new_vp = %Viewport{
-      x: Map.get(attrs, :x, Map.get(attrs, "x", vp.x)) * 1.0,
-      y: Map.get(attrs, :y, Map.get(attrs, "y", vp.y)) * 1.0,
-      zoom: Map.get(attrs, :zoom, Map.get(attrs, "zoom", vp.zoom)) * 1.0
+      x: get.(:x, vp.x) * 1.0,
+      y: get.(:y, vp.y) * 1.0,
+      zoom: get.(:zoom, vp.zoom) * 1.0,
+      container_width: get.(:container_width, vp.container_width) * 1.0,
+      container_height: get.(:container_height, vp.container_height) * 1.0
     }
 
     %{state | viewport: new_vp}

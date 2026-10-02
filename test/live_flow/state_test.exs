@@ -477,6 +477,24 @@ defmodule LiveFlow.StateTest do
   end
 
   describe "update_viewport/2" do
+    test "updates container size and keeps it when not given or nil" do
+      state =
+        State.new()
+        |> State.update_viewport(%{
+          "x" => 1,
+          "container_width" => 1200,
+          "container_height" => 900
+        })
+
+      assert state.viewport.container_width == 1200.0
+      assert state.viewport.container_height == 900.0
+
+      state = State.update_viewport(state, %{"x" => 2, "container_width" => nil})
+      assert state.viewport.x == 2.0
+      assert state.viewport.container_width == 1200.0
+      assert state.viewport.container_height == 900.0
+    end
+
     test "updates viewport with atom keys" do
       state = State.new() |> State.update_viewport(%{x: 50, y: 75, zoom: 1.5})
 
